@@ -69,10 +69,10 @@ def solve(board):
 
     row, col = empty
     for num in get_candidates(board, row, col):
-            board[row][col] = num
-            if solve(board):
-                return True
-            board[row][col] = 0  # Backtrack
+        board[row][col] = num
+        if solve(board):
+            return True
+        board[row][col] = 0  # Backtrack
 
     return False
 
