@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LinkedIn Queens Solver</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 4px; color: #a78bfa; }
+    p.subtitle { font-size: 0.9rem; color: #94a3b8; margin-bottom: 24px; }
+
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 12px; color: #c4b5fd; }
+
+    /* Bookmarklet section */
+    .bookmarklet-link {
+      display: inline-block;
+      background: #7c3aed;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: grab;
+      border: 2px dashed #a78bfa;
+      transition: background 0.2s;
+    }
+    .bookmarklet-link:hover { background: #6d28d9; }
+
+    .steps { list-style: decimal; padding-left: 20px; font-size: 0.9rem; color: #94a3b8; line-height: 1.8; }
+    .steps li { margin-bottom: 4px; }
+
+    /* Manual grid builder */
+    .controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+
+    label { font-size: 0.85rem; color: #94a3b8; }
+
+    select, button {
+      background: #334155;
+      border: 1px solid #475569;
+      color: #e2e8f0;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    select:focus, button:focus { outline: 2px solid #7c3aed; outline-offset: 2px; }
+    button:hover { background: #475569; }
+
+    button.primary {
+      background: #7c3aed;
+      border-color: #7c3aed;
+      font-weight: 600;
+    }
+    button.primary:hover { background: #6d28d9; }
+
+    /* Grid */
+    #grid-container {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+
+    #grid {
+      display: grid;
+      gap: 2px;
+      border: 2px solid #475569;
+      border-radius: 4px;
+      padding: 4px;
+      background: #0f172a;
+      user-select: none;
+    }
+
+    .cell {
+      width: 44px;
+      height: 44px;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      position: relative;
+      transition: border-color 0.15s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+    }
+    .cell:hover { border-color: #fff; transform: scale(1.05); }
+    .cell.queen::after { content: "♛"; font-size: 1.4rem; }
+
+    /* Colour palette */
+    #palette {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    #palette h3 { font-size: 0.85rem; color: #94a3b8; margin-bottom: 4px; }
+
+    .palette-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 2px solid transparent;
+      transition: border-color 0.15s;
+    }
+    .palette-item:hover { border-color: #94a3b8; }
+    .palette-item.selected { border-color: #fff; }
+
+    .swatch {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .palette-label { font-size: 0.8rem; color: #94a3b8; }
+
+    /* Solution output */
+    #solution-box {
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: #6ee7b7;
+    }
+    #solution-box.error { color: #f87171; }
+
+    /* Status bar */
+    #status {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin-top: 8px;
+      min-height: 1.2em;
+    }
+  </style>
+</head>
+<body>
+
+<h1>♛ LinkedIn Queens Solver</h1>
+<p class="subtitle">Auto-solves the LinkedIn Queens puzzle via bookmarklet, or use the manual grid builder below.</p>
+
+<!-- ── BOOKMARKLET ─────────────────────────────────────────────────────────── -->
+<div class="card">
+  <h2>Step 1 — Bookmarklet (Auto-solve on LinkedIn)</h2>
+  <p style="font-size:0.85rem; color:#94a3b8; margin-bottom:14px;">
+    Drag the button below to your bookmarks bar. Then open the LinkedIn Queens game and click it.
+  </p>
+  <a id="bookmarklet" class="bookmarklet-link" href="#">♛ Solve Queens</a>
+  <br/><br/>
+  <ol class="steps">
+    <li>Drag the button above to your browser's bookmarks bar.</li>
+    <li>Go to <strong>linkedin.com/games/queens</strong> and open a puzzle.</li>
+    <li>Click the bookmark — it will detect the board and place queens automatically.</li>
+    <li>If auto-detection fails, use the manual grid builder below to find the solution.</li>
+  </ol>
+</div>
+
+<!-- ── MANUAL GRID BUILDER ────────────────────────────────────────────────── -->
+<div class="card">
+  <h2>Step 2 (Fallback) — Manual Grid Builder</h2>
+  <div class="controls">
+    <label>Grid size:
+      <select id="size-select">
+        <option value="4">4×4</option>
+        <option value="5">5×5</option>
+        <option value="6">6×6</option>
+        <option value="7">7×7</option>
+        <option value="8" selected>8×8</option>
+        <option value="9">9×9</option>
+        <option value="10">10×10</option>
+        <option value="11">11×11</option>
+        <option value="12">12×12</option>
+      </select>
+    </label>
+    <button onclick="resetGrid()">Reset</button>
+    <button class="primary" onclick="solveManual()">Solve ♛</button>
+  </div>
+
+  <div id="grid-container">
+    <div>
+      <div id="grid"></div>
+      <div id="status">Click a colour in the palette, then paint cells on the grid.</div>
+    </div>
+    <div id="palette">
+      <h3>Colours</h3>
+      <!-- filled by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ── SOLUTION OUTPUT ─────────────────────────────────────────────────────── -->
+<div class="card" id="solution-card" style="display:none;">
+  <h2>Solution</h2>
+  <div id="solution-box"></div>
+</div>
+
+<script>
+// ── SOLVER ────────────────────────────────────────────────────────────────────
+function solve(colorGrid) {
+  const N = colorGrid.length;
+  const queens = [];
+  const usedCols = new Set();
+  const usedRegions = new Set();
+
+  function conflicts(row, col) {
+    for (const [qr, qc] of queens) {
+      if (Math.abs(qr - row) <= 1 && Math.abs(qc - col) <= 1) return true;
+    }
+    return false;
+  }
+
+  function backtrack(row) {
+    if (row === N) return true;
+    for (let col = 0; col < N; col++) {
+      if (usedCols.has(col)) continue;
+      const region = colorGrid[row][col];
+      if (usedRegions.has(region)) continue;
+      if (conflicts(row, col)) continue;
+      queens.push([row, col]);
+      usedCols.add(col);
+      usedRegions.add(region);
+      if (backtrack(row + 1)) return true;
+      queens.pop();
+      usedCols.delete(col);
+      usedRegions.delete(region);
+    }
+    return false;
+  }
+
+  return backtrack(0) ? queens : null;
+}
+
+// ── COLOUR PALETTE ────────────────────────────────────────────────────────────
+const COLOURS = [
+  { name: "Red",     hex: "#ef4444" },
+  { name: "Orange",  hex: "#f97316" },
+  { name: "Yellow",  hex: "#eab308" },
+  { name: "Lime",    hex: "#84cc16" },
+  { name: "Green",   hex: "#22c55e" },
+  { name: "Teal",    hex: "#14b8a6" },
+  { name: "Blue",    hex: "#3b82f6" },
+  { name: "Indigo",  hex: "#6366f1" },
+  { name: "Purple",  hex: "#a855f7" },
+  { name: "Pink",    hex: "#ec4899" },
+  { name: "Brown",   hex: "#92400e" },
+  { name: "Gray",    hex: "#64748b" },
+];
+
+// ── GRID STATE ────────────────────────────────────────────────────────────────
+let N = 8;
+let gridState = []; // gridState[r][c] = colour index (0-based) or -1 (unpainted)
+let selectedColour = 0;
+let isPainting = false;
+let solution = null;
+
+function initGrid() {
+  N = parseInt(document.getElementById("size-select").value);
+  gridState = Array.from({ length: N }, () => Array(N).fill(-1));
+  solution = null;
+  renderGrid();
+  renderPalette();
+  document.getElementById("solution-card").style.display = "none";
+  document.getElementById("status").textContent = "Click a colour in the palette, then paint cells on the grid.";
+}
+
+function resetGrid() {
+  initGrid();
+}
+
+function renderPalette() {
+  const pal = document.getElementById("palette");
+  pal.innerHTML = "<h3>Colours</h3>";
+  for (let i = 0; i < N; i++) {
+    const c = COLOURS[i % COLOURS.length];
+    const item = document.createElement("div");
+    item.className = "palette-item" + (i === selectedColour ? " selected" : "");
+    item.dataset.idx = i;
+    item.innerHTML = `<div class="swatch" style="background:${c.hex}"></div><span class="palette-label">Region ${i + 1}</span>`;
+    item.addEventListener("click", () => {
+      selectedColour = i;
+      document.querySelectorAll(".palette-item").forEach(el => el.classList.remove("selected"));
+      item.classList.add("selected");
+    });
+    pal.appendChild(item);
+  }
+}
+
+function renderGrid() {
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  grid.style.gridTemplateColumns = `repeat(${N}, 44px)`;
+  grid.style.gridTemplateRows = `repeat(${N}, 44px)`;
+
+  for (let r = 0; r < N; r++) {
+    for (let c = 0; c < N; c++) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+      updateCellStyle(cell, r, c);
+
+      cell.addEventListener("mousedown", e => { isPainting = true; paintCell(r, c); e.preventDefault(); });
+      cell.addEventListener("mouseover", () => { if (isPainting) paintCell(r, c); });
+      cell.addEventListener("touchstart", e => { isPainting = true; paintCell(r, c); e.preventDefault(); });
+      cell.addEventListener("touchmove", e => {
+        const t = e.touches[0];
+        const el = document.elementFromPoint(t.clientX, t.clientY);
+        if (el && el.dataset.r !== undefined) paintCell(+el.dataset.r, +el.dataset.c);
+        e.preventDefault();
+      });
+      grid.appendChild(cell);
+    }
+  }
+
+  document.addEventListener("mouseup", () => { isPainting = false; });
+  document.addEventListener("touchend", () => { isPainting = false; });
+}
+
+function updateCellStyle(cell, r, c) {
+  const ci = gridState[r][c];
+  if (ci >= 0) {
+    cell.style.background = COLOURS[ci % COLOURS.length].hex + "cc";
+  } else {
+    cell.style.background = "#1e293b";
+  }
+  // Show queen if solution exists
+  if (solution) {
+    const isQueen = solution.some(([qr, qc]) => qr === r && qc === c);
+    cell.classList.toggle("queen", isQueen);
+  } else {
+    cell.classList.remove("queen");
+  }
+}
+
+function paintCell(r, c) {
+  gridState[r][c] = selectedColour;
+  const cell = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+  if (cell) updateCellStyle(cell, r, c);
+}
+
+function solveManual() {
+  // Validate all cells are painted
+  const unpainted = [];
+  for (let r = 0; r < N; r++)
+    for (let c = 0; c < N; c++)
+      if (gridState[r][c] < 0) unpainted.push([r, c]);
+
+  if (unpainted.length > 0) {
+    setStatus(`⚠️ ${unpainted.length} cell(s) unpainted. Paint the entire grid before solving.`, "warn");
+    return;
+  }
+
+  const regions = new Set(gridState.flat());
+  if (regions.size !== N) {
+    setStatus(`⚠️ Found ${regions.size} colour regions but grid is ${N}×${N}. You need exactly ${N} regions.`, "warn");
+  }
+
+  solution = solve(gridState);
+
+  const card = document.getElementById("solution-card");
+  const box = document.getElementById("solution-box");
+
+  if (!solution) {
+    box.className = "error";
+    box.textContent = "No solution found. Check that your colour regions are correct.";
+    card.style.display = "block";
+    return;
+  }
+
+  box.className = "";
+  const lines = solution.map(([r, c]) => `Row ${r+1}, Column ${c+1}  (Region: ${COLOURS[gridState[r][c] % COLOURS.length].name})`);
+  box.innerHTML = lines.map(l => `<div>${l}</div>`).join("") +
+    `<br/><strong>Queens are shown on the grid above (♛).</strong>`;
+  card.style.display = "block";
+  setStatus("✅ Solution found!", "ok");
+
+  // Refresh grid to show queens
+  document.querySelectorAll(".cell").forEach(cell => {
+    const r = +cell.dataset.r, c = +cell.dataset.c;
+    updateCellStyle(cell, r, c);
+  });
+}
+
+function setStatus(msg, type) {
+  const el = document.getElementById("status");
+  el.textContent = msg;
+  el.style.color = type === "ok" ? "#6ee7b7" : type === "warn" ? "#fbbf24" : "#94a3b8";
+}
+
+// ── BOOKMARKLET ───────────────────────────────────────────────────────────────
+function buildBookmarklet() {
+  // Inline the linkedin-solver.js content into a bookmarklet href
+  const code = `(function(){${BOOKMARKLET_CODE}})();`;
+  document.getElementById("bookmarklet").href = "javascript:" + encodeURIComponent(BOOKMARKLET_CODE);
+}
+
+// Inline the solver code so bookmarklet works without a server
+const BOOKMARKLET_CODE = `
+(function(){
+function solve(g){var N=g.length,q=[],uc=new Set,ur=new Set;function cf(r,c){for(var p of q)if(Math.abs(p[0]-r)<=1&&Math.abs(p[1]-c)<=1)return true;return false;}function bt(row){if(row===N)return true;for(var col=0;col<N;col++){if(uc.has(col))continue;var reg=g[row][col];if(ur.has(reg))continue;if(cf(row,col))continue;q.push([row,col]);uc.add(col);ur.add(reg);if(bt(row+1))return true;q.pop();uc.delete(col);ur.delete(reg);}return false;}return bt(0)?q:null;}
+function rgb2k(s){return(s||"").replace(/\\s/g,"").toLowerCase();}
+function detectBoard(){var cells,raw,N,grid,els,colorMap,nextId,i,el,bg,key,colorEl,depth,kids,colorSet,container,allDivs,sels,sel,board,clickable,candidates;
+// Attempt 1: data-cell-coordinate
+cells=document.querySelectorAll("[data-cell-coordinate]");
+if(cells.length>0){var maxR=0,maxC=0;raw=[];cells.forEach(function(c){var coord=c.getAttribute("data-cell-coordinate").split(","),r=parseInt(coord[0]),cc=parseInt(coord[1]);maxR=Math.max(maxR,r);maxC=Math.max(maxC,cc);raw.push({r:r,c:cc,el:c});});N=maxR+1;if(raw.length===N*N)return buildGrid(raw,N);}
+// Attempt 2: aria-label Row/Col
+cells=[].filter.call(document.querySelectorAll("[aria-label]"),function(e){return/row\\s*\\d+.*col/i.test(e.getAttribute("aria-label"));});
+if(cells.length>1){raw=cells.map(function(e){var m=e.getAttribute("aria-label").match(/row\\s*(\\d+).*col(?:umn)?\\s*(\\d+)/i);return{r:parseInt(m[1])-1,c:parseInt(m[2])-1,el:e};});N=Math.max.apply(null,raw.map(function(x){return x.r;}))+1;if(raw.length===N*N)return buildGrid(raw,N);}
+// Attempt 3: CSS grid with background colours
+sels=["[class*='queens']","[class*='game-board']","[class*='board']"];
+for(i=0;i<sels.length;i++){board=document.querySelector(sels[i]);if(!board)continue;clickable=[].filter.call(board.querySelectorAll("button,[role='button'],[tabindex]"),function(e){return board.contains(e);});if(clickable.length>=4){N=Math.round(Math.sqrt(clickable.length));if(N*N===clickable.length){raw=clickable.map(function(e,idx){return{r:Math.floor(idx/N),c:idx%N,el:e};});return buildGrid(raw,N);}}}
+// Attempt 4: NxN sibling grid
+allDivs=document.querySelectorAll("div,td,li");
+for(i=0;i<allDivs.length;i++){container=allDivs[i];kids=[].filter.call(container.children,function(e){return"DIV,TD,LI,BUTTON".indexOf(e.tagName)>=0;});N=Math.round(Math.sqrt(kids.length));if(N>=4&&N*N===kids.length){colorSet=new Set(kids.map(function(e){return rgb2k(window.getComputedStyle(e).backgroundColor);}).filter(function(c){return c!=="rgba(0,0,0,0)"&&c!=="transparent";}));if(colorSet.size>=Math.max(N-2,2)){raw=kids.map(function(e,idx){return{r:Math.floor(idx/N),c:idx%N,el:e};});return buildGrid(raw,N);}}}
+return null;}
+function buildGrid(raw,N){var colorMap=new Map,nextId=0,grid=Array.from({length:N},function(){return Array(N).fill(0);}),els=Array.from({length:N},function(){return Array(N).fill(null);});raw.forEach(function(item){var colorEl=item.el,bg="",depth;for(depth=0;depth<5;depth++){bg=window.getComputedStyle(colorEl).backgroundColor;if(bg&&bg!=="rgba(0, 0, 0, 0)"&&bg!=="transparent")break;if(!colorEl.parentElement)break;colorEl=colorEl.parentElement;}var key=rgb2k(bg)||"pos-"+item.r+"-"+item.c;if(!colorMap.has(key))colorMap.set(key,nextId++);grid[item.r][item.c]=colorMap.get(key);els[item.r][item.c]=item.el;});return{grid:grid,cellEls:els,N:N};}
+function clickCell(el){["pointerdown","mousedown","click","pointerup","mouseup"].forEach(function(t){el.dispatchEvent(new MouseEvent(t,{bubbles:true,cancelable:true}));});}
+function delay(ms){return new Promise(function(r){setTimeout(r,ms);});}
+function showOverlay(msg,color){var o=document.getElementById("__qsolver");if(!o){o=document.createElement("div");o.id="__qsolver";Object.assign(o.style,{position:"fixed",top:"20px",right:"20px",zIndex:"999999",padding:"14px 20px",borderRadius:"10px",fontFamily:"system-ui,sans-serif",fontSize:"14px",fontWeight:"600",color:"#fff",boxShadow:"0 4px 20px rgba(0,0,0,.3)",maxWidth:"300px"});document.body.appendChild(o);}o.style.background=color||"#6366f1";o.textContent=msg;setTimeout(function(){o.remove();},6000);}
+async function main(){showOverlay("Queens Solver: detecting board...","#6366f1");var result=detectBoard();if(!result){showOverlay("Could not detect board. Make sure you are on the Queens game page.","#ef4444");return;}var grid=result.grid,cellEls=result.cellEls,N=result.N;var solution=solve(grid);if(!solution){showOverlay("No solution found — board may not be read correctly.","#ef4444");return;}showOverlay("Solved! Placing queens...","#10b981");for(var i=0;i<solution.length;i++){var row=solution[i][0],col=solution[i][1],el=cellEls[row][col];if(el)clickCell(el);await delay(200);}showOverlay("Done! Queens placed.","#10b981");}
+main().catch(function(e){showOverlay("Error: "+e.message,"#ef4444");});
+})();`.trim();
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("bookmarklet").href = "javascript:" + encodeURIComponent(BOOKMARKLET_CODE);
+  initGrid();
+});
+
+document.getElementById("size-select").addEventListener("change", initGrid);
+</script>
+</body>
+</html>
