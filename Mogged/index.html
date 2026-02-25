@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Merica Clanker Advait</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    overflow: hidden;
+  }
+
+  #container {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+  }
+
+  #mog-btn {
+    padding: 24px 56px;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    background: linear-gradient(135deg, #ff4500, #ff0080);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 0 30px rgba(255, 69, 0, 0.4);
+    transition: transform 0.1s, box-shadow 0.1s;
+    text-transform: uppercase;
+  }
+  #mog-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 50px rgba(255, 69, 0, 0.6);
+  }
+  #mog-btn:active { transform: scale(0.97); }
+
+  #message {
+    font-size: 32px;
+    font-weight: 900;
+    color: #fff;
+    text-align: center;
+    line-height: 1.4;
+    opacity: 0;
+    transform: scale(0.5);
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+    max-width: 480px;
+    padding: 0 20px;
+  }
+  #message.show {
+    opacity: 1;
+    transform: scale(1);
+  }
+  #message span {
+    color: #ff4500;
+    display: block;
+    font-size: 36px;
+    text-shadow: 0 0 20px rgba(255,69,0,0.6);
+  }
+</style>
+</head>
+<body>
+
+<div id="container">
+  <button id="mog-btn" onclick="getMogged()">Press Me</button>
+  <div id="message"></div>
+</div>
+
+<canvas id="particles" style="position:fixed;top:0;left:0;pointer-events:none;z-index:10;"></canvas>
+
+<script>
+function getMogged() {
+  let msg = document.getElementById('message');
+  msg.classList.remove('show');
+  msg.innerHTML = 'You just got mogged by the<br><span>Merica Clanker Advait</span>';
+  void msg.offsetWidth;
+  msg.classList.add('show');
+  launchParticles();
+}
+
+let animId = null;
+function launchParticles() {
+  let canvas = document.getElementById('particles');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  let ctx = canvas.getContext('2d');
+  if (animId) cancelAnimationFrame(animId);
+
+  let particles = [];
+  let cx = window.innerWidth / 2;
+  let cy = window.innerHeight / 2;
+  let colors = ['#ff4500','#ff0080','#ffcc00','#00ffcc','#ffffff'];
+
+  for (let i = 0; i < 150; i++) {
+    let angle = Math.random() * Math.PI * 2;
+    let speed = Math.random() * 12 + 3;
+    particles.push({
+      x: cx, y: cy,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 4,
+      r: Math.random() * 7 + 2,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      alpha: 1,
+      gravity: 0.25
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += p.gravity;
+      p.alpha -= 0.012;
+      ctx.globalAlpha = Math.max(0, p.alpha);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    if (particles.some(p => p.alpha > 0)) {
+      animId = requestAnimationFrame(draw);
+    }
+  }
+  animId = requestAnimationFrame(draw);
+}
+</script>
+</body>
+</html>
